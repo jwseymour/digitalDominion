@@ -1,0 +1,26 @@
+{
+    "name": "digital-dominion",
+    "version": "1.0.0",
+    "description": "A civilization building simulation with AI-driven leadership capabilities",
+    "type": "module",
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build",
+      "preview": "vite preview"
+    },
+    "keywords": [
+      "simulation",
+      "civilization",
+      "ai",
+      "3d",
+      "game"
+    ],
+    "author": "Your Name",
+    "license": "MIT",
+    "dependencies": {
+      "three": "^0.162.0"
+    },
+    "devDependencies": {
+      "vite": "^5.1.4"
+    }
+  }

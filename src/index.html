@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Dominion</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Digital Dominion</h1>
+        <nav>
+            <button id="new-simulation">New Simulation</button>
+            <button id="load-simulation">Load Simulation</button>
+            <button id="settings">Settings</button>
+        </nav>
+    </header>
+
+    <main>
+        <div id="simulation-container">
+            <div id="world-view"></div>
+            <div id="control-panel">
+                <div id="stats-panel"></div>
+                <div id="decision-panel">
+                    <h2>Leadership Mode</h2>
+                    <select id="leadership-mode">
+                        <option value="manual">Manual Control</option>
+                        <option value="ai">AI Leader</option>
+                    </select>
+                    <div id="decision-interface"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Digital Dominion</p>
+    </footer>
+
+    <script src="js/main.js" type="module"></script>
+</body>
+</html>
