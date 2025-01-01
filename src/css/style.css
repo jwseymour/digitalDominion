@@ -33,8 +33,15 @@ nav button {
 #world-view {
     background-color: #fff;
     min-height: 70vh;
+    width: 100%;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+#world-view canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 #control-panel {

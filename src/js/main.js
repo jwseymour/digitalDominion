@@ -1,7 +1,12 @@
-// Main application entry point
+import { WorldGenerator } from './engine/world/WorldGenerator.js';
+import { WorldRenderer } from './visualisation/world-renderer.js';
+
 class DigitalDominion {
     constructor() {
+        this.worldGenerator = null;
+        this.worldRenderer = null;
         this.init();
+        this.startNewSimulation(); // Automatically start a simulation when loaded
     }
 
     init() {
@@ -16,12 +21,21 @@ class DigitalDominion {
     }
 
     setupWorldView() {
-        // Initialize 3D world view (placeholder for now)
-        console.log('3D world view initialization will go here');
+        this.worldRenderer = new WorldRenderer('world-view');
     }
 
     startNewSimulation() {
-        console.log('Starting new simulation');
+        const seed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+        this.worldGenerator = new WorldGenerator(seed);
+        console.log(`Starting new simulation with seed: ${seed}`);
+        
+        // Generate and render initial chunks around origin
+        for (let x = -1; x <= 1; x++) {
+            for (let z = -1; z <= 1; z++) {
+                const chunk = this.worldGenerator.getChunk(x, z);
+                this.worldRenderer.renderChunk(chunk);
+            }
+        }
     }
 
     loadSimulation() {
