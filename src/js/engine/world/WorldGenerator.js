@@ -38,47 +38,6 @@ export class WorldGenerator {
         return chunk;
     }
 
-    generateBaseTerrain(chunk) {
-        // Generate height maps at different scales for multiple octaves of detail
-        const largeFeatures = this.generateHeightMap(
-            chunk.position.x * this.chunkSize,
-            chunk.position.z * this.chunkSize,
-            this.chunkSize,
-            this.chunkSize,
-            64  // Large scale features
-        );
-        
-        const mediumFeatures = this.generateHeightMap(
-            chunk.position.x * this.chunkSize,
-            chunk.position.z * this.chunkSize,
-            this.chunkSize,
-            this.chunkSize,
-            16  // Medium scale features
-        );
-        
-        const smallFeatures = this.generateHeightMap(
-            chunk.position.x * this.chunkSize,
-            chunk.position.z * this.chunkSize,
-            this.chunkSize,
-            this.chunkSize,
-            4   // Small scale features
-        );
-    
-        // Combine the different scales into final terrain
-        for (let x = 0; x < this.chunkSize; x++) {
-            for (let z = 0; z < this.chunkSize; z++) {
-                let height = this.baseHeight;
-                
-                // Add features at different scales with different weights
-                height += largeFeatures[z][x] * 50;    // Large features have most impact
-                height += mediumFeatures[z][x] * 10;   // Medium features add some variation
-                height += smallFeatures[z][x] * 2;     // Small features add fine detail
-                
-                chunk.terrain[x + z * this.chunkSize] = height;
-            }
-        }
-    }
-
     generateRockFormations(chunk) {
         // Generate major geological features
         const rockLayers = [];
@@ -147,6 +106,311 @@ export class WorldGenerator {
         return 'igneous';
     }
 
+    generateBaseTerrain(chunk) {
+
+        const zoom = 1;
+        // Generate global terrain type map (extremely large scale)
+        const terrainTypeMap = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            4096 / zoom // Very large scale for global terrain types
+        );
+    
+        // Generate various influence maps
+        const oceanicMap = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            2048 / zoom  // Ocean/continent boundaries
+        );
+    
+        const plateauMap = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            1024 / zoom // Large plateaus and basins
+        );
+    
+        // Generate terrain features at different scales
+        const mountainRanges = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            512 / zoom  // Mountain range scale
+        );
+    
+        const valleySystem = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            256 / zoom  // Valley system scale
+        );
+    
+        const hillFeatures = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            128 / zoom // Rolling hills scale
+        );
+    
+        const detailFeatures = this.generateHeightMap(
+            chunk.position.x * this.chunkSize,
+            chunk.position.z * this.chunkSize,
+            this.chunkSize,
+            this.chunkSize,
+            32 / zoom  // Small detail scale
+        );
+
+        console.log(this.classifyTerrain(terrainTypeMap[1][1]));
+    
+        // Process terrain type and apply appropriate features
+        for (let x = 0; x < this.chunkSize; x++) {
+            for (let z = 0; z < this.chunkSize; z++) {
+                const terrainTypes = this.classifyTerrain(terrainTypeMap[z][x]);
+                let finalHeight = 0;
+                let totalWeight = 0;
+    
+                // Deep Ocean
+                if (terrainTypes.deepOcean > 0) {
+                    const height = this.generateOceanicTerrain(
+                        oceanicMap[z][x],
+                        valleySystem[z][x],
+                        -0.8
+                    );
+                    finalHeight += height * terrainTypes.deepOcean;
+                    totalWeight += terrainTypes.deepOcean;
+                }
+    
+                // Archipelago
+                if (terrainTypes.archipelago > 0) {
+                    const height = this.generateArchipelagoTerrain(
+                        oceanicMap[z][x],
+                        hillFeatures[z][x],
+                        mountainRanges[z][x]
+                    );
+                    finalHeight += height * terrainTypes.archipelago;
+                    totalWeight += terrainTypes.archipelago;
+                }
+    
+                // Coastal
+                if (terrainTypes.coastal > 0) {
+                    const height = this.generateCoastalTerrain(
+                        oceanicMap[z][x],
+                        hillFeatures[z][x],
+                        valleySystem[z][x]
+                    );
+                    finalHeight += height * terrainTypes.coastal;
+                    totalWeight += terrainTypes.coastal;
+                }
+    
+                // Plains
+                if (terrainTypes.plains > 0) {
+                    const height = this.generatePlainsTerrain(
+                        plateauMap[z][x],
+                        hillFeatures[z][x]
+                    );
+                    finalHeight += height * terrainTypes.plains;
+                    totalWeight += terrainTypes.plains;
+                }
+    
+                // Hills
+                if (terrainTypes.hills > 0) {
+                    const height = this.generateHillyTerrain(
+                        hillFeatures[z][x],
+                        valleySystem[z][x],
+                        plateauMap[z][x]
+                    );
+                    finalHeight += height * terrainTypes.hills;
+                    totalWeight += terrainTypes.hills;
+                }
+    
+                // Mountains
+                if (terrainTypes.mountains > 0) {
+                    const height = this.generateMountainTerrain(
+                        mountainRanges[z][x],
+                        valleySystem[z][x],
+                        plateauMap[z][x]
+                    );
+                    finalHeight += height * terrainTypes.mountains;
+                    totalWeight += terrainTypes.mountains;
+                }
+    
+                // Plateau
+                if (terrainTypes.plateau > 0) {
+                    const height = this.generatePlateauTerrain(
+                        plateauMap[z][x],
+                        valleySystem[z][x],
+                        hillFeatures[z][x]
+                    );
+                    finalHeight += height * terrainTypes.plateau;
+                    totalWeight += terrainTypes.plateau;
+                }
+    
+                // Normalize the height and add small details
+                let height = finalHeight / totalWeight;
+                
+                // Add detail features that scale with terrain height
+                const detailScale = 1 + Math.abs(height - this.baseHeight) / 100;
+                height += detailFeatures[z][x] * 5 * detailScale * (1-terrainTypes.archipelago);
+    
+                chunk.terrain[x + z * this.chunkSize] = height;
+            }
+        }
+    }
+
+    classifyTerrain(value) {
+        // Convert to [0,1] range and add some noise to break up straight lines
+        value = (value + 1) * 0.5;
+        
+        // Wider transition zones with overlapping ranges
+        const transitions = {
+            deepOcean: {
+                start: 0,
+                peak: 0.15,
+                end: 0.25
+            },
+            archipelago: {
+                start: 0.15,
+                peak: 0.25,
+                end: 0.35
+            },
+            coastal: {
+                start: 0.25,
+                peak: 0.35,
+                end: 0.45
+            },
+            plains: {
+                start: 0.35,
+                peak: 0.45,
+                end: 0.6
+            },
+            hills: {
+                start: 0.45,
+                peak: 0.6,
+                end: 0.75
+            },
+            mountains: {
+                start: 0.6,
+                peak: 0.75,
+                end: 0.9
+            },
+            plateau: {
+                start: 0.75,
+                peak: 0.9,
+                end: 1
+            }
+        };
+    
+        // Calculate smooth weights for each terrain type
+        const weights = {};
+        for (const [type, range] of Object.entries(transitions)) {
+            const weight = this.smoothTransition(value, range.start, range.peak, range.end);
+            weights[type] = weight;
+        }
+    
+        return weights;
+    }
+    
+    smoothTransition(value, start, peak, end) {
+        if (value < start || value > end) return 0;
+        
+        if (value < peak) {
+            // Smooth transition from start to peak
+            const t = (value - start) / (peak - start);
+            return this.smootherstep(t);
+        } else {
+            // Smooth transition from peak to end
+            const t = (end - value) / (end - peak);
+            return this.smootherstep(t);
+        }
+    }
+    
+    smootherstep(t) {
+        // Smoother interpolation curve
+        t = Math.max(0, Math.min(1, t));
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+    
+    generateOceanicTerrain(oceanic, valley, depth) {
+        const base = this.sigmoid(oceanic, 6) * depth;
+        return this.baseHeight + base * 100 + valley * 10;
+    }
+    
+    generateArchipelagoTerrain(oceanic, hills, mountains) {
+        const islandFactor = this.easeInOut(oceanic * 0.5 + 0.5);
+        // Make islands more distinct and taller
+        const baseHeight = this.smootherstep(this.lerp(-0.4, 0.3, islandFactor));
+        
+        // Only apply hill variations when above water level
+        const hillEffect = baseHeight > 0 ? hills * 10 : 0;
+        
+        // Increase mountain influence on island height
+        const mountainEffect = mountains * 40;
+        
+        // Combine effects with stronger base height
+        return this.baseHeight + baseHeight * 120 + hillEffect + mountainEffect;
+    }
+    
+    generateCoastalTerrain(oceanic, hills, valley) {
+        const coastFactor = this.easeIn(oceanic * 0.5 + 0.5);
+        const height = this.lerp(-0.1, 0.15, coastFactor);
+        return this.baseHeight + height * 100 + hills * 15 + valley * 10;
+    }
+    
+    generatePlainsTerrain(plateau, hills) {
+        const plainsFactor = this.easeInOut(plateau * 0.5 + 0.5);
+        return this.baseHeight + plainsFactor * 20 + hills * 5;
+    }
+    
+    generateHillyTerrain(hills, valley, plateau) {
+        const baseHeight = this.easeInOut(hills);
+        const valleyInfluence = this.sigmoid(valley, 3);
+        return this.baseHeight + baseHeight * 100 + valley * 30 + plateau * 20;
+    }
+    
+    generateMountainTerrain(mountains, valley, plateau) {
+        const mountainHeight = this.ridgeNoise(mountains);
+        const peakFactor = Math.pow(mountainHeight, 1.2); // Reduced from 1.5 for less extreme peaks
+        const baseElevation = 150; // Reduced from 200
+        return baseElevation + peakFactor * 200 + valley * 40 + plateau * 60; // Reduced multipliers
+    }
+    
+    generatePlateauTerrain(plateau, valley, hills) {
+        const plateauHeight = this.sigmoid(plateau, 4);
+        return this.baseHeight + plateauHeight * 200 + valley * 30 + hills * 10;
+    }
+    
+    sigmoid(x, steepness = 1) {
+        return 1 / (1 + Math.exp(-steepness * x));
+    }
+    
+    easeIn(x) {
+        return x * x;
+    }
+    
+    easeOut(x) {
+        return 1 - (1 - x) * (1 - x);
+    }
+    
+    easeInOut(x) {
+        return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    }
+    
+    // Add this utility function for ridge creation
+    ridgeNoise(value) {
+        // Convert normal noise to ridged noise
+        value = Math.abs(value);
+        value = 1 - value;
+        return value * value;
+    }
+
     generateHeightMap(startX, startZ, width, height, scale) {
         // Create the output height array
         const heightMap = Array(height).fill().map(() => Array(width).fill(0));
@@ -168,9 +432,12 @@ export class WorldGenerator {
                 // Get spiral index for these coordinates
                 const spiralIndex = this.xyToIndex(worldX, worldZ);
                 
-                // Use spiral index as seed for this point
-                const pointRng = new MersenneTwister(this.seed + spiralIndex);
-                controlPoints[z][x] = pointRng.random() * 2 - 1; // Value between -1 and 1
+                // Use continuous hash function
+                const hashedValue = this.hashSeed(this.seed, worldX, worldZ);
+                
+                // Use consistent random generation
+                const pointRng = new MersenneTwister(Math.floor(Math.abs(hashedValue * 1000000)));
+                controlPoints[z][x] = pointRng.random() * 2 - 1;
             }
         }
         
@@ -207,6 +474,13 @@ export class WorldGenerator {
         }
         
         return heightMap;
+    }
+
+    hashSeed(seed, x, y) {
+        // Use a more continuous hash function
+        const h1 = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453123;
+        const h2 = Math.sin(y * 12.9898 + x * 78.233 + seed * 1.234) * 43758.5453123;
+        return (h1 + h2) * 0.5;
     }
     
     interpolateHeight(points, x, y) {

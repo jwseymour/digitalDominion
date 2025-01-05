@@ -5,8 +5,9 @@ class DigitalDominion {
     constructor() {
         this.worldGenerator = null;
         this.worldRenderer = null;
+        this.seedInput = document.getElementById('seed-input');
         this.init();
-        this.startNewSimulation(); // Automatically start a simulation when loaded
+        this.startNewSimulation(1); // Start with seed 1
     }
 
     init() {
@@ -15,31 +16,33 @@ class DigitalDominion {
     }
 
     setupEventListeners() {
-        document.getElementById('new-simulation').addEventListener('click', () => this.startNewSimulation());
-        document.getElementById('load-simulation').addEventListener('click', () => this.loadSimulation());
+        document.getElementById('new-simulation').addEventListener('click', () => {
+            const newSeed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+            this.seedInput.value = newSeed;
+            this.startNewSimulation(newSeed);
+        });
         document.getElementById('leadership-mode').addEventListener('change', (e) => this.changeLeadershipMode(e));
+        this.seedInput.addEventListener('change', () => {
+            const seed = parseInt(this.seedInput.value) || 1;
+            this.startNewSimulation(seed);
+        });
     }
 
     setupWorldView() {
         this.worldRenderer = new WorldRenderer('world-view');
     }
 
-    startNewSimulation() {
-        const seed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+    startNewSimulation(seed) {
         this.worldGenerator = new WorldGenerator(seed);
         console.log(`Starting new simulation with seed: ${seed}`);
         
         // Generate and render initial chunks around origin
-        for (let x = -1; x <= 1; x++) {
-            for (let z = -1; z <= 1; z++) {
+        for (let x = -5; x <= 5; x++) {
+            for (let z = -5; z <= 5; z++) {
                 const chunk = this.worldGenerator.getChunk(x, z);
                 this.worldRenderer.renderChunk(chunk);
             }
         }
-    }
-
-    loadSimulation() {
-        console.log('Loading simulation');
     }
 
     changeLeadershipMode(event) {

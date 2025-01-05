@@ -55,7 +55,7 @@ export class WorldRenderer {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
         this.controls.minDistance = 100;
-        this.controls.maxDistance = 1000;
+        this.controls.maxDistance = 10000;
         this.controls.maxPolarAngle = Math.PI / 2.1; // Prevent going below ground
         this.controls.target.set(0, 0, 0);
     }
@@ -132,24 +132,24 @@ export class WorldRenderer {
         const grassColor = new THREE.Color(0x567d46);
         const rockColor = new THREE.Color(0x7f7f7f);
         const snowColor = new THREE.Color(0xffffff);
-
+    
         if (height < 95) return waterColor;
-        if (height < 98) return sandColor;
-
-        // Mix between grass and rock based on height
+        if (height < 97) return sandColor;  // Narrower beach area
+    
+        // Smoother transition between grass and rock
         let baseColor = new THREE.Color().lerpColors(
             grassColor,
             rockColor,
-            (height - 98) / 50
+            Math.pow((height - 97) / 100, 2)  // Smoother transition
         );
-
+    
         // Adjust based on temperature and rainfall
         if (temperature < 0) {
             baseColor.lerp(snowColor, 0.8);
         } else if (rainfall > 800) {
-            baseColor.lerp(grassColor, 0.6);
+            baseColor.lerp(grassColor, 0.4);  // Reduced grass intensity
         }
-
+    
         return baseColor;
     }
 
