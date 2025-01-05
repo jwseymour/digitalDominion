@@ -37,6 +37,32 @@ nav button {
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
     overflow: hidden;
+    cursor: pointer;
+}
+
+#world-view:active {
+    cursor: grabbing;
+}
+
+/* Add pointer lock styles */
+#world-view:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
+#world-view:-moz-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
+#world-view:-ms-fullscreen {
+    width: 100%;
+    height: 100%;
+}
+
+#world-view:fullscreen {
+    width: 100%;
+    height: 100%;
 }
 
 #world-view canvas {

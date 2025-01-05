@@ -1,11 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { PlayerControls } from '../controls/PlayerControls.js';
 
 export class WorldRenderer {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
         this.scene = new THREE.Scene();
         this.chunks = new Map();
+        this.clock = new THREE.Clock();
         
         this.setupCamera();
         this.setupRenderer();
@@ -51,13 +53,10 @@ export class WorldRenderer {
     }
 
     setupControls() {
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
-        this.controls.minDistance = 100;
-        this.controls.maxDistance = 10000;
-        this.controls.maxPolarAngle = Math.PI / 2.1; // Prevent going below ground
-        this.controls.target.set(0, 0, 0);
+        this.controls = new PlayerControls(this.camera, this.renderer.domElement);
+        
+        // Set initial camera position
+        this.camera.position.set(0, 500, 0);
     }
 
     renderChunk(chunk) {
@@ -154,8 +153,12 @@ export class WorldRenderer {
     }
 
     animate() {
+        const deltaTime = this.clock ? this.clock.getDelta() : 0.016;
         requestAnimationFrame(() => this.animate());
-        this.controls.update();
+        
+        // Update controls
+        this.controls.update(deltaTime);
+        
         this.renderer.render(this.scene, this.camera);
     }
 }
