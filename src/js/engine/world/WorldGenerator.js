@@ -167,8 +167,6 @@ export class WorldGenerator {
             this.chunkSize,
             32 / zoom  // Small detail scale
         );
-
-        console.log(this.classifyTerrain(terrainTypeMap[1][1]));
     
         // Process terrain type and apply appropriate features
         for (let x = 0; x < this.chunkSize; x++) {

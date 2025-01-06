@@ -10,6 +10,13 @@ body {
     background-color: #f4f4f4;
 }
 
+main {
+    display: flex;
+    justify-content: center;
+    height: calc(100vh - 160px); /* Subtract header height */
+    padding: 1rem;
+}
+
 header {
     background-color: #333;
     color: white;
@@ -23,16 +30,55 @@ nav button {
     cursor: pointer;
 }
 
+.control-group {
+    margin-bottom: 1rem;
+}
+
+.control-group h3 {
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.control-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.control-key {
+    font-weight: bold;
+    color: #666;
+}
+
 #simulation-container {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr;
     gap: 1rem;
+    max-width: 100%;
+    width: 100%;
+    transition: grid-template-columns 0.3s ease;
+}
+
+#simulation-container.show-controls {
+    grid-template-columns: 2fr 1fr;
+}
+
+#controls-panel {
+    background-color: #fff;
     padding: 1rem;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: none;
+}
+
+#simulation-container.show-controls #controls-panel {
+    display: block;
 }
 
 #world-view {
     background-color: #fff;
-    min-height: 70vh;
+    height: calc(100vh - 180px); /* Subtract header height + padding */
     width: 100%;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
@@ -68,13 +114,6 @@ nav button {
 #world-view canvas {
     width: 100% !important;
     height: 100% !important;
-}
-
-#control-panel {
-    background-color: #fff;
-    padding: 1rem;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 #seed-input {

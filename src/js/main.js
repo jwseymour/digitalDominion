@@ -24,10 +24,18 @@ class DigitalDominion {
             this.seedInput.value = newSeed;
             this.startNewSimulation(newSeed);
         });
-        document.getElementById('leadership-mode').addEventListener('change', (e) => this.changeLeadershipMode(e));
+        
         this.seedInput.addEventListener('change', () => {
             const seed = parseInt(this.seedInput.value) || 3;
             this.startNewSimulation(seed);
+        });
+    
+        document.getElementById('controls').addEventListener('click', () => {
+            const container = document.getElementById('simulation-container');
+            container.classList.toggle('show-controls');
+            
+            // Trigger resize event to update renderer
+            window.dispatchEvent(new Event('resize'));
         });
     }
 
@@ -54,11 +62,6 @@ class DigitalDominion {
         
         // Initial chunk load around origin
         this.chunkManager.update(new THREE.Vector3(0, 0, 0));
-    }
-
-    changeLeadershipMode(event) {
-        const mode = event.target.value;
-        console.log(`Changing leadership mode to: ${mode}`);
     }
 }
 

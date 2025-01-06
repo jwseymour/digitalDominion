@@ -19,23 +19,52 @@
         <h1>Digital Dominion</h1>
         <nav>
             <button id="new-simulation">New Simulation</button>
-            <input type="number" id="seed-input" value="1" min="1">
-            <button id="settings">Settings</button>
+            <input type="number" id="seed-input" value="3" min="1">
+            <button id="controls">Controls</button>
         </nav>
     </header>
 
     <main>
         <div id="simulation-container">
             <div id="world-view"></div>
-            <div id="control-panel">
-                <div id="stats-panel"></div>
-                <div id="decision-panel">
-                    <h2>Leadership Mode</h2>
-                    <select id="leadership-mode">
-                        <option value="manual">Manual Control</option>
-                        <option value="ai">AI Leader</option>
-                    </select>
-                    <div id="decision-interface"></div>
+            <div id="controls-panel">
+                <div class="control-group">
+                    <h3>Movement Controls</h3>
+                    <div class="control-item">
+                        <span class="control-action">Move Forward</span>
+                        <span class="control-key">W / ↑</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-action">Move Backward</span>
+                        <span class="control-key">S / ↓</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-action">Move Left</span>
+                        <span class="control-key">A / ←</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-action">Move Right</span>
+                        <span class="control-key">D / →</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-action">Move Up</span>
+                        <span class="control-key">Space</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-action">Move Down</span>
+                        <span class="control-key">Shift</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <h3>View Controls</h3>
+                    <div class="control-item">
+                        <span class="control-action">Toggle Top-Down View</span>
+                        <span class="control-key">T</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="control-action">Speed Boost</span>
+                        <span class="control-key">B</span>
+                    </div>
                 </div>
             </div>
         </div>
