@@ -20,7 +20,7 @@ export class WorldRenderer {
 
     setupCamera() {
         const aspect = this.container.clientWidth / this.container.clientHeight;
-        this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 10000);
+        this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 20000);
         this.camera.position.set(500, 500, 500);
         this.camera.lookAt(0, 0, 0);
     }
@@ -56,72 +56,99 @@ export class WorldRenderer {
         this.controls = new PlayerControls(this.camera, this.renderer.domElement);
         
         // Set initial camera position
-        this.camera.position.set(0, 500, 0);
+        this.camera.position.set(500, 500, 500);
     }
 
-    renderChunk(chunk) {
+    renderChunk(chunk, resolution = 255) {
         const chunkKey = `${chunk.position.x},${chunk.position.z}`;
         if (this.chunks.has(chunkKey)) {
             this.scene.remove(this.chunks.get(chunkKey));
         }
-
-        // Create geometry
+    
+        // Create geometry with specified resolution
         const geometry = new THREE.PlaneGeometry(
             256, // chunk size
             256,
-            255, // segments
-            255
+            resolution,
+            resolution
         );
-
-        // Update vertices based on terrain height
+    
         // Update vertices based on terrain height
         const positions = geometry.attributes.position.array;
+        const stepSize = 256 / resolution;
+        
         for (let i = 0; i < positions.length; i += 3) {
-            const x = Math.floor((i / 3) % 256);
-            const z = Math.floor((i / 3) / 256);
+            const x = Math.floor((i / 3) % (resolution + 1)) * stepSize;
+            const z = Math.floor((i / 3) / (resolution + 1)) * stepSize;
             
-            // Set X, Y, and Z coordinates
+            // Sample terrain height
+            const terrainX = Math.min(Math.floor(x), 255);
+            const terrainZ = Math.min(Math.floor(z), 255);
+            
             positions[i] = x - 128;     // Center the chunk around origin
-            positions[i + 1] = chunk.terrain[x + z * 256]; // Height (Y)
+            positions[i + 1] = chunk.terrain[terrainX + terrainZ * 256];
             positions[i + 2] = z - 128; // Center the chunk around origin
         }
+        
         geometry.computeVertexNormals();
-
-        // Create material with height-based coloring
+    
+        // Create material and add colors
         const material = new THREE.MeshStandardMaterial({
             vertexColors: true,
             flatShading: true
         });
-
+    
         // Add colors based on height and climate
         const colors = new Float32Array(positions.length);
         for (let i = 0; i < positions.length; i += 3) {
-            const x = Math.floor((i / 3) % 256);
-            const z = Math.floor((i / 3) / 256);
-            const height = chunk.terrain[x + z * 256];
-            const temperature = chunk.climate.temperature[x + z * 256];
-            const rainfall = chunk.climate.rainfall[x + z * 256];
-
-            // Calculate color based on height and climate
+            const x = Math.floor((i / 3) % (resolution + 1)) * stepSize;
+            const z = Math.floor((i / 3) / (resolution + 1)) * stepSize;
+            
+            const terrainX = Math.min(Math.floor(x), 255);
+            const terrainZ = Math.min(Math.floor(z), 255);
+            
+            const height = chunk.terrain[terrainX + terrainZ * 256];
+            const temperature = chunk.climate.temperature[terrainX + terrainZ * 256];
+            const rainfall = chunk.climate.rainfall[terrainX + terrainZ * 256];
+    
             const color = this.calculateTerrainColor(height, temperature, rainfall);
             colors[i] = color.r;
             colors[i + 1] = color.g;
             colors[i + 2] = color.b;
         }
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        // Create mesh and add to scene
+    
+        // Create and position mesh
         const mesh = new THREE.Mesh(geometry, material);
         mesh.position.set(
-            (chunk.position.x * 256) - 128,  // Center chunks around origin
+            (chunk.position.x * 256) - 128,
             0,
             (chunk.position.z * 256) - 128
         );
         mesh.receiveShadow = true;
         mesh.castShadow = true;
-
+    
         this.scene.add(mesh);
         this.chunks.set(chunkKey, mesh);
+    }
+    
+    removeChunk(chunkKey) {
+        if (this.chunks.has(chunkKey)) {
+            const mesh = this.chunks.get(chunkKey);
+            this.scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            this.chunks.delete(chunkKey);
+        }
+    }
+
+    clearChunks() {
+        for (const [chunkKey, mesh] of this.chunks) {
+            this.scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+        }
+        this.chunks.clear();
     }
 
     calculateTerrainColor(height, temperature, rainfall) {
@@ -153,11 +180,15 @@ export class WorldRenderer {
     }
 
     animate() {
-        const deltaTime = this.clock ? this.clock.getDelta() : 0.016;
         requestAnimationFrame(() => this.animate());
         
         // Update controls
-        this.controls.update(deltaTime);
+        this.controls.update(this.clock.getDelta());
+        
+        // Notify about camera position changes
+        if (this.onCameraMove) {
+            this.onCameraMove(this.camera.position);
+        }
         
         this.renderer.render(this.scene, this.camera);
     }
