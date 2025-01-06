@@ -8,26 +8,103 @@ export class ChunkManager {
         this.chunkLoadQueue = [];
         this.lastPlayerChunk = { x: 0, z: 0 };
         
-        // Increased LOD settings with larger distances
+        // Memory management
+        this.maxLoadedChunks = 512; // Adjust based on available memory
+        this.chunkMemoryPool = new Map(); // Store unused chunk geometries
+        
+        // Create frustum for culling
+        this.frustum = new THREE.Frustum();
+        this.projScreenMatrix = new THREE.Matrix4();
+        
+        // LOD settings with memory budgets
         this.lodLevels = {
-            HIGH: { distance: 750, resolution: 255 },
-            MEDIUM: { distance: 1500, resolution: 127 },
-            LOW: { distance: 3000, resolution: 63 }
+            HIGH: { distance: 750, resolution: 255, maxChunks: 64 },
+            MEDIUM: { distance: 1500, resolution: 127, maxChunks: 96 },
+            LOW: { distance: 3000, resolution: 63, maxChunks: 128 }
+        };
+        
+        // Chunk statistics for monitoring
+        this.stats = {
+            visibleChunks: 0,
+            culledChunks: 0,
+            poolSize: 0
         };
     }
 
+    updateFrustum() {
+        this.projScreenMatrix.multiplyMatrices(
+            this.worldRenderer.camera.projectionMatrix,
+            this.worldRenderer.camera.matrixWorldInverse
+        );
+        this.frustum.setFromProjectionMatrix(this.projScreenMatrix);
+    }
+
+    isChunkVisible(chunkX, chunkZ) {
+        const chunkBox = new THREE.Box3(
+            new THREE.Vector3(chunkX * 256 - 128, -100, chunkZ * 256 - 128),
+            new THREE.Vector3((chunkX + 1) * 256 - 128, 1000, (chunkZ + 1) * 256 - 128)
+        );
+        return this.frustum.intersectsBox(chunkBox);
+    }
+
+    getOrCreateGeometry(resolution) {
+        const key = `geometry_${resolution}`;
+        if (this.chunkMemoryPool.has(key) && this.chunkMemoryPool.get(key).length > 0) {
+            return this.chunkMemoryPool.get(key).pop();
+        }
+        return new THREE.PlaneGeometry(256, 256, resolution, resolution);
+    }
+
+    recycleGeometry(geometry, resolution) {
+        const key = `geometry_${resolution}`;
+        if (!this.chunkMemoryPool.has(key)) {
+            this.chunkMemoryPool.set(key, []);
+        }
+        if (this.chunkMemoryPool.get(key).length < 20) { // Pool size limit
+            this.chunkMemoryPool.get(key).push(geometry);
+        } else {
+            geometry.dispose();
+        }
+    }
+
+    manageMemory() {
+        // Count chunks by LOD level
+        const counts = { HIGH: 0, MEDIUM: 0, LOW: 0 };
+        for (const [_, data] of this.loadedChunks) {
+            counts[data.lodLevel]++;
+        }
+
+        // Remove excess chunks if we're over budget
+        if (this.loadedChunks.size > this.maxLoadedChunks) {
+            const chunksToRemove = Array.from(this.loadedChunks.entries())
+                .sort((a, b) => b[1].lastUsed - a[1].lastUsed)
+                .slice(this.maxLoadedChunks);
+
+            for (const [key] of chunksToRemove) {
+                this.unloadChunk(...key.split(',').map(Number));
+            }
+        }
+
+        // Update stats
+        this.stats.poolSize = Array.from(this.chunkMemoryPool.values())
+            .reduce((sum, arr) => sum + arr.length, 0);
+    }
+
     update(playerPosition) {
+        this.updateFrustum();
+        
         const currentChunkX = Math.floor(playerPosition.x / 256);
         const currentChunkZ = Math.floor(playerPosition.z / 256);
-
+    
         if (currentChunkX !== this.lastPlayerChunk.x || 
             currentChunkZ !== this.lastPlayerChunk.z) {
             
             this.updateChunks(currentChunkX, currentChunkZ, playerPosition);
             this.lastPlayerChunk = { x: currentChunkX, z: currentChunkZ };
         }
-
+    
         this.processLoadQueue();
+        this.manageMemory();
     }
 
     updateChunks(centerX, centerZ, playerPosition) {
