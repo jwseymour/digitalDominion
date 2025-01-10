@@ -7,7 +7,7 @@ export class WorldGenerator {
         this.rng = new MersenneTwister(seed);
         this.chunks = new Map(); // Store loaded chunks
         this.chunkSize = 256; // Size of each chunk in world units
-        this.baseHeight = 100; // Base terrain height
+        this.baseHeight = 0; // Base terrain height
     }
 
     // Get or generate a chunk at specified coordinates
@@ -30,7 +30,6 @@ export class WorldGenerator {
             }
         };
 
-        // Generate base terrain using multiple octaves of noise
         this.generateBaseTerrain(chunk);
         this.generateRockFormations(chunk);
         this.generateClimate(chunk);
@@ -108,14 +107,13 @@ export class WorldGenerator {
 
     generateBaseTerrain(chunk) {
 
-        const zoom = 1;
         // Generate global terrain type map (extremely large scale)
         const terrainTypeMap = this.generateHeightMap(
             chunk.position.x * this.chunkSize,
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            4096 / zoom // Very large scale for global terrain types
+            4096 // Very large scale for global terrain types
         );
     
         // Generate various influence maps
@@ -124,7 +122,7 @@ export class WorldGenerator {
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            2048 / zoom  // Ocean/continent boundaries
+            2048  // Ocean/continent boundaries
         );
     
         const plateauMap = this.generateHeightMap(
@@ -132,7 +130,7 @@ export class WorldGenerator {
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            1024 / zoom // Large plateaus and basins
+            1024 // Large plateaus and basins
         );
     
         // Generate terrain features at different scales
@@ -141,7 +139,7 @@ export class WorldGenerator {
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            512 / zoom  // Mountain range scale
+            512  // Mountain range scale
         );
     
         const valleySystem = this.generateHeightMap(
@@ -149,7 +147,7 @@ export class WorldGenerator {
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            256 / zoom  // Valley system scale
+            256  // Valley system scale
         );
     
         const hillFeatures = this.generateHeightMap(
@@ -157,7 +155,7 @@ export class WorldGenerator {
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            128 / zoom // Rolling hills scale
+            128 // Rolling hills scale
         );
     
         const detailFeatures = this.generateHeightMap(
@@ -165,7 +163,7 @@ export class WorldGenerator {
             chunk.position.z * this.chunkSize,
             this.chunkSize,
             this.chunkSize,
-            32 / zoom  // Small detail scale
+            32  // Small detail scale
         );
     
         // Process terrain type and apply appropriate features
@@ -256,7 +254,7 @@ export class WorldGenerator {
                 
                 // Add detail features that scale with terrain height
                 const detailScale = 1 + Math.abs(height - this.baseHeight) / 100;
-                height += detailFeatures[z][x] * 5 * detailScale * (1-terrainTypes.archipelago);
+                height += detailFeatures[z][x] * 5 * detailScale;
     
                 chunk.terrain[x + z * this.chunkSize] = height;
             }

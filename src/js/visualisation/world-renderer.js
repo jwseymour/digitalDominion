@@ -54,9 +54,6 @@ export class WorldRenderer {
 
     setupControls() {
         this.controls = new PlayerControls(this.camera, this.renderer.domElement);
-        
-        // Set initial camera position
-        this.camera.position.set(500, 500, 500);
     }
 
     renderChunk(chunk, resolution = 255) {
@@ -152,28 +149,94 @@ export class WorldRenderer {
     }
 
     calculateTerrainColor(height, temperature, rainfall) {
-        // Base colors for different terrain types
-        const waterColor = new THREE.Color(0x0044ff);
-        const sandColor = new THREE.Color(0xc2b280);
-        const grassColor = new THREE.Color(0x567d46);
-        const rockColor = new THREE.Color(0x7f7f7f);
-        const snowColor = new THREE.Color(0xffffff);
+        // Base colors
+        const deepWaterColor = new THREE.Color(0x000033);  // Deep ocean blue
+        const shallowWaterColor = new THREE.Color(0x0066ff);  // Shallow water blue
+        const sandColor = new THREE.Color(0xc2b280);     // Beige for beaches
+        const grassColor = new THREE.Color(0x567d46);    // Green for lowlands
+        const forestColor = new THREE.Color(0x2d4c1e);   // Dark green for forests
+        const rockColor = new THREE.Color(0x8b8b7a);     // Warm grey for hills
+        const brownRockColor = new THREE.Color(0x3d2b23); // Darker brown for mountains
+        const snowColor = new THREE.Color(0xffffff);     // White for peaks
     
-        if (height < 95) return waterColor;
-        if (height < 97) return sandColor;  // Narrower beach area
+        // Water depth coloring
+        if (height < 0) {
+            const depthFactor = Math.min(1, Math.abs(height) / 100);
+            return new THREE.Color().lerpColors(
+                shallowWaterColor,
+                deepWaterColor,
+                depthFactor
+            );
+        }
     
-        // Smoother transition between grass and rock
+        if (height < 2) return sandColor;
+    
+        // For lower elevations (grass/forest to rocky hills)
         let baseColor = new THREE.Color().lerpColors(
             grassColor,
             rockColor,
-            Math.pow((height - 97) / 100, 2)  // Smoother transition
+            Math.min(1, height / 80)
         );
     
-        // Adjust based on temperature and rainfall
-        if (temperature < 0) {
-            baseColor.lerp(snowColor, 0.8);
-        } else if (rainfall > 800) {
-            baseColor.lerp(grassColor, 0.4);  // Reduced grass intensity
+        // Forest coverage based on climate
+        if (height > 2 && height < 100) {
+            const forestSuitability = (rainfall - 500) / 1500;
+            const temperatureSuitability = Math.max(0, (temperature - 0) / 20);
+            const forestFactor = Math.min(1, Math.max(0, forestSuitability * temperatureSuitability));
+            
+            if (forestFactor > 0.2) {
+                baseColor.lerp(forestColor, forestFactor);
+            }
+        }
+    
+        // For higher elevations (rocky hills to mountains to snow)
+        if (height > 120) {
+            const mountainProgress = (height - 120) / 180;
+            
+            // Calculate snow line based on temperature and rainfall
+            const snowLine = Math.max(0.6,  // Lowered from 0.7 to allow more snow
+                0.7 + (temperature / 40) +   // Reduced from 0.8 for more snow coverage
+                (rainfall / 4000)
+            );
+            
+            if (mountainProgress < snowLine) {
+                // Hills to darker mountain rock
+                baseColor = new THREE.Color().lerpColors(
+                    rockColor,
+                    brownRockColor,
+                    mountainProgress / snowLine
+                );
+            } else {
+                // Ensure peaks get snowy
+                const snowProgress = (mountainProgress - snowLine) / (1 - snowLine);
+                const snowIntensity = Math.max(0.3,  // Minimum snow intensity for high peaks
+                    1 - (temperature / 20) -
+                    (rainfall / 2000)
+                );
+                
+                // Force more snow at very high elevations
+                const heightSnowBoost = Math.max(0, (height - 250) / 50);
+                const finalSnowIntensity = Math.min(1, snowIntensity + heightSnowBoost);
+                
+                baseColor = new THREE.Color().lerpColors(
+                    brownRockColor,
+                    snowColor,
+                    Math.min(1, snowProgress * finalSnowIntensity)
+                );
+            }
+        }
+    
+        // Additional climate-based snow for very cold regions
+        if (temperature < 0 && height > 150) {
+            const coldSnowFactor = Math.min(
+                Math.abs(temperature) / 15,  // Increased from 20 for more snow
+                (height - 150) / 100
+            );
+            baseColor = new THREE.Color().lerpColors(
+                baseColor,
+                snowColor,
+                Math.min(0.9, coldSnowFactor)  // Increased from 0.8 for whiter snow
+            );
         }
     
         return baseColor;

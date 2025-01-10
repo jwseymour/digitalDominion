@@ -6,7 +6,6 @@ export class ChunkManager {
         this.worldRenderer = worldRenderer;
         this.loadedChunks = new Map();
         this.chunkLoadQueue = [];
-        this.lastPlayerChunk = { x: 0, z: 0 };
         
         // Memory management
         this.maxLoadedChunks = 512; // Adjust based on available memory
@@ -22,6 +21,27 @@ export class ChunkManager {
             MEDIUM: { distance: 1500, resolution: 127, maxChunks: 96 },
             LOW: { distance: 3000, resolution: 63, maxChunks: 128 }
         };
+        
+       // Height-based resolution steps
+       this.heightSteps = [
+           { height: 500, multiplier: 1 },    // Base resolution
+           { height: 1000, multiplier: 0.5 },  // Half resolution
+           { height: 2000, multiplier: 0.25 }, // Quarter resolution
+           { height: 3000, multiplier: 0.125 }, // Eighth resolution
+           { height: 4000, multiplier: 0.0625 } // Sixteenthh resolution
+        ];
+        
+        // Resolution presets for each LOD level
+        this.baseResolutions = {
+            HIGH: 255,
+            MEDIUM: 127,
+            LOW: 63
+        };
+        
+        this.minResolution = 5;
+        
+        this.lastPlayerChunk = { x: 0, z: 0 };
+        this.lastHeightStep = this.heightSteps[0];
         
         // Chunk statistics for monitoring
         this.stats = {
@@ -93,18 +113,47 @@ export class ChunkManager {
     update(playerPosition) {
         this.updateFrustum();
         
+        // Get height-adjusted settings
+        const viewSettings = this.calculateViewSettings(playerPosition.y);
+        this.maxLoadedChunks = viewSettings.maxLoadedChunks;
+        
+        // Temporarily override LOD distances and resolutions
+        const originalLOD = { ...this.lodLevels };
+        this.lodLevels = viewSettings.lodSettings;
+        
+        // Existing update logic
         const currentChunkX = Math.floor(playerPosition.x / 256);
         const currentChunkZ = Math.floor(playerPosition.z / 256);
-    
+        
+        // Find current height step
+        let currentHeightStep = this.heightSteps[0];
+        for (const step of this.heightSteps) {
+            if (playerPosition.y >= step.height) {
+                currentHeightStep = step;
+            } else {
+                break;
+            }
+        }
+
+        // Check if position changed OR height step changed
         if (currentChunkX !== this.lastPlayerChunk.x || 
-            currentChunkZ !== this.lastPlayerChunk.z) {
+            currentChunkZ !== this.lastPlayerChunk.z ||
+            currentHeightStep !== this.lastHeightStep) {
+
+            console.log('Current height:', playerPosition.y);
+            console.log('Current LOD levels:', this.lodLevels);
+            console.log('Max Loaded Chunks: ', this.maxLoadedChunks)
             
             this.updateChunks(currentChunkX, currentChunkZ, playerPosition);
             this.lastPlayerChunk = { x: currentChunkX, z: currentChunkZ };
+            this.lastHeightStep = currentHeightStep;
         }
     
         this.processLoadQueue();
         this.manageMemory();
+        
+        // Restore original LOD settings
+        this.lodLevels = originalLOD;
     }
 
     updateChunks(centerX, centerZ, playerPosition) {
@@ -117,11 +166,18 @@ export class ChunkManager {
             const [x, z] = key.split(',').map(Number);
             const chunkCenter = new THREE.Vector3(
                 x * 256 + 128,
-                0,
+                0,  // Force Y to 0 for distance calculation
                 z * 256 + 128
             );
             
-            const distance = playerPosition.distanceTo(chunkCenter);
+            // Create a position vector in the X-Z plane for distance calculation
+            const flatPosition = new THREE.Vector3(
+                playerPosition.x,
+                0,  // Force Y to 0
+                playerPosition.z
+            );
+            
+            const distance = flatPosition.distanceTo(chunkCenter);
             const newLodLevel = this.getLODLevel(distance);
             
             // If distance exceeds view distance, unload the chunk
@@ -154,11 +210,18 @@ export class ChunkManager {
     
                 const chunkCenter = new THREE.Vector3(
                     chunkX * 256 + 128,
-                    0,
+                    0,  // Force Y to 0
                     chunkZ * 256 + 128
                 );
                 
-                const distance = playerPosition.distanceTo(chunkCenter);
+                // Create a position vector in the X-Z plane
+                const flatPosition = new THREE.Vector3(
+                    playerPosition.x,
+                    0,  // Force Y to 0
+                    playerPosition.z
+                );
+                
+                const distance = flatPosition.distanceTo(chunkCenter);
                 const lodLevel = this.getLODLevel(distance);
                 
                 if (lodLevel && !this.loadedChunks.has(chunkKey)) {
@@ -217,6 +280,54 @@ export class ChunkManager {
         
         this.worldRenderer.renderChunk(chunk, resolution);
         this.loadedChunks.set(chunkKey, { chunk, lodLevel });
+    }
+
+    calculateViewSettings(height) {
+        // Find appropriate height step
+        let currentStep = this.heightSteps[0];
+        for (const step of this.heightSteps) {
+            if (height >= step.height) {
+                currentStep = step;
+            } else {
+                break;
+            }
+        }
+
+        // Calculate view distance multiplier (still continuous for smooth transitions)
+        const viewMultiplier = Math.min(
+            Math.sqrt(height / this.heightSteps[0].height),
+            4 // Max view multiplier
+        );
+        
+        // Calculate resolutions using discrete steps
+        const calculateResolution = (baseResolution) => {
+            return Math.max(
+                this.minResolution,
+                Math.floor(baseResolution * currentStep.multiplier)
+            );
+        };
+        
+        // Calculate new LOD settings
+        const lodSettings = {
+            HIGH: {
+                distance: this.lodLevels.HIGH.distance * viewMultiplier,
+                resolution: calculateResolution(this.baseResolutions.HIGH)
+            },
+            MEDIUM: {
+                distance: this.lodLevels.MEDIUM.distance * viewMultiplier,
+                resolution: calculateResolution(this.baseResolutions.MEDIUM)
+            },
+            LOW: {
+                distance: this.lodLevels.LOW.distance * viewMultiplier,
+                resolution: calculateResolution(this.baseResolutions.LOW)
+            }
+        };
+
+        // Adjust max loaded chunks based on view distance
+        const totalArea = Math.PI * Math.pow(lodSettings.LOW.distance / 256, 2);
+        const newMaxChunks = Math.ceil(totalArea * 1.2); // 20% buffer
+
+        return { lodSettings, maxLoadedChunks: newMaxChunks };
     }
 
     getLODLevel(distance) {
