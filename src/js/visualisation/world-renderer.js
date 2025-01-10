@@ -64,8 +64,8 @@ export class WorldRenderer {
     
         // Create geometry with specified resolution
         const geometry = new THREE.PlaneGeometry(
-            256, // chunk size
-            256,
+            chunk.size, // chunk size
+            chunk.size,
             resolution,
             resolution
         );
