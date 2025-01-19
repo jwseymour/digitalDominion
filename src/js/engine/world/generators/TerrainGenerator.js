@@ -1,24 +1,36 @@
 import { InterpolationUtils } from '../utils/InterpolationUtils.js';
 import { TerrainCalculator } from '../terrain/TerrainCalculator.js';
 import { HeightMapGenerator } from './HeightMapGenerator.js';
+import { PlateManager } from '../plate/PlateManager.js';
 
 export class TerrainGenerator {
     constructor(seed, baseHeight = 0) {
         this.seed = seed;
         this.baseHeight = baseHeight;
+        this.plateManager = new PlateManager(seed);
         this.heightMapGenerator = new HeightMapGenerator(seed);
         this.terrainCalculator = new TerrainCalculator(baseHeight);
     }
 
     generateTerrain(chunk) {
         // Generate global terrain type map (extremely large scale)
-        const terrainTypeMap = this.heightMapGenerator.generateHeightMap(
-            chunk.position.x * chunk.size,
-            chunk.position.z * chunk.size,
-            chunk.size,
-            chunk.size,
-            4096 // Very large scale for global terrain types
-        );
+        // const terrainTypeMap = this.heightMapGenerator.generateHeightMap(
+        //     chunk.position.x * chunk.size,
+        //     chunk.position.z * chunk.size,
+        //     chunk.size,
+        //     chunk.size,
+        //     4096 // Very large scale for global terrain types
+        // );
+        const terrainTypeMap = Array(chunk.size).fill().map(() => Array(chunk.size).fill(0));
+        
+        for (let z = 0; z < chunk.size; z++) {
+            for (let x = 0; x < chunk.size; x++) {
+                const worldX = chunk.position.x * chunk.size + x;
+                const worldZ = chunk.position.z * chunk.size + z;
+                terrainTypeMap[z][x] = this.plateManager.calculateWorleyValue(worldX, worldZ);
+            }
+        }
+        console.log(terrainTypeMap[1][1])
 
         // Generate various influence maps
         const oceanicMap = this.heightMapGenerator.generateHeightMap(

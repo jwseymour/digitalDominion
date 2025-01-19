@@ -7,9 +7,6 @@ export class TerrainCalculator {
     }
 
     classifyTerrain(value) {
-        // Convert to [0,1] range and add some noise to break up straight lines
-        value = (value + 1) * 0.5;
-        
         // Calculate smooth weights for each terrain type
         const weights = {};
         for (const [type, range] of Object.entries(TERRAIN_TRANSITIONS)) {
