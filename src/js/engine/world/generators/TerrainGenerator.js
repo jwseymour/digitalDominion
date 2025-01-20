@@ -7,30 +7,26 @@ export class TerrainGenerator {
     constructor(seed, baseHeight = 0) {
         this.seed = seed;
         this.baseHeight = baseHeight;
-        this.plateManager = new PlateManager(seed);
+        this.plateManager = new PlateManager(seed, 131072, 1);
         this.heightMapGenerator = new HeightMapGenerator(seed);
         this.terrainCalculator = new TerrainCalculator(baseHeight);
     }
 
     generateTerrain(chunk) {
         // Generate global terrain type map (extremely large scale)
-        // const terrainTypeMap = this.heightMapGenerator.generateHeightMap(
-        //     chunk.position.x * chunk.size,
-        //     chunk.position.z * chunk.size,
-        //     chunk.size,
-        //     chunk.size,
-        //     4096 // Very large scale for global terrain types
-        // );
         const terrainTypeMap = Array(chunk.size).fill().map(() => Array(chunk.size).fill(0));
         
         for (let z = 0; z < chunk.size; z++) {
             for (let x = 0; x < chunk.size; x++) {
                 const worldX = chunk.position.x * chunk.size + x;
                 const worldZ = chunk.position.z * chunk.size + z;
-                terrainTypeMap[z][x] = this.plateManager.calculateWorleyValue(worldX, worldZ);
+                const result = this.plateManager.calculateWorleyValue(worldX, worldZ);
+                terrainTypeMap[z][x] = {
+                    value: result.value,
+                    additionalValue: result.values[0] || 0
+                };
             }
         }
-        console.log(terrainTypeMap[1][1])
 
         // Generate various influence maps
         const oceanicMap = this.heightMapGenerator.generateHeightMap(
@@ -94,38 +90,46 @@ export class TerrainGenerator {
     }
 
     combineTerrain(chunk, terrainTypeMap, oceanicMap, plateauMap, mountainRanges, valleySystem, hillFeatures, detailFeatures) {
-        for (let x = 0; x < chunk.size; x++) {
-            for (let z = 0; z < chunk.size; z++) {
-                const terrainTypes = this.terrainCalculator.classifyTerrain(terrainTypeMap[z][x]);
-                let finalHeight = 0;
-                let totalWeight = 0;
+    for (let x = 0; x < chunk.size; x++) {
+        for (let z = 0; z < chunk.size; z++) {
+            // Extract the value from the new terrainTypeMap structure
+            const terrainData = terrainTypeMap[z][x];
+            const terrainTypes = this.terrainCalculator.classifyTerrain(terrainData.value);
+            
+            let finalHeight = 0;
+            let totalWeight = 0;
 
-                // Apply each terrain type with its corresponding weight
-                Object.entries(terrainTypes).forEach(([type, weight]) => {
-                    if (weight > 0) {
-                        const height = this.generateTerrainType(
-                            type,
-                            oceanicMap[z][x],
-                            hillFeatures[z][x],
-                            valleySystem[z][x],
-                            plateauMap[z][x],
-                            mountainRanges[z][x]
-                        );
-                        finalHeight += height * weight;
-                        totalWeight += weight;
-                    }
-                });
+            // Apply each terrain type with its corresponding weight
+            Object.entries(terrainTypes).forEach(([type, weight]) => {
+                if (weight > 0) {
+                    // Use the additional value as a modifier for terrain generation
+                    const modifier = terrainData.additionalValue * 0.5; // Scale the influence
+                    const height = this.generateTerrainType(
+                        type,
+                        oceanicMap[z][x] + modifier,
+                        hillFeatures[z][x],
+                        valleySystem[z][x],
+                        plateauMap[z][x],
+                        mountainRanges[z][x]
+                    );
+                    finalHeight += height * weight;
+                    totalWeight += weight;
+                }
+            });
 
-                // Normalize height and add details
+            // Normalize height and add details
+            if (totalWeight > 0) {
                 let height = finalHeight / totalWeight;
                 const detailScale = 1 + Math.abs(height - this.baseHeight) / 100;
                 height += detailFeatures[z][x] * 5 * detailScale;
-
                 chunk.terrain[x + z * chunk.size] = height;
+            } else {
+                chunk.terrain[x + z * chunk.size] = this.baseHeight;
             }
         }
-        return chunk;
     }
+    return chunk;
+}
 
     generateTerrainType(type, oceanic, hills, valley, plateau, mountains) {
         switch (type) {

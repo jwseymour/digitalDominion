@@ -1,10 +1,11 @@
 import { MersenneTwister } from "../../../utils/MersenneTwister";
 
 export class PlateChunk {
-    constructor(position, seed) {
+    constructor(position, seed, size, valueCount = 0) {
         this.position = position;
-        this.size = 131072; // Increased from 4096
+        this.size = size;
         this.seed = seed;
+        this.valueCount = valueCount;
         this.points = [];
     }
 
@@ -17,10 +18,18 @@ export class PlateChunk {
         const pointCount = 20 + Math.floor(rng.random() * 5);
         
         for (let i = 0; i < pointCount; i++) {
-            this.points.push({
+            const point = {
                 x: this.position.x * this.size + rng.random() * this.size,
-                z: this.position.z * this.size + rng.random() * this.size
-            });
+                z: this.position.z * this.size + rng.random() * this.size,
+                values: []
+            };
+
+            // Generate additional random values if requested
+            for (let j = 0; j < this.valueCount; j++) {
+                point.values.push(rng.random());
+            }
+
+            this.points.push(point);
         }
     }
 }

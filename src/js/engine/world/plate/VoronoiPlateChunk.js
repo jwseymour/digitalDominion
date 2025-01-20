@@ -1,8 +1,9 @@
 export class VoronoiPlateChunk {
-    constructor(position, size) {
+    constructor(position, size, cellSize) {
         this.position = position;
         this.size = size;
-        this.regions = new Map(); // Map of regions keyed by cell coordinates
+        this.cellSize = cellSize;
+        this.regions = new Map();
     }
 
     addRegion(x, z, nearestPoint, adjacentPoints) {
@@ -14,9 +15,8 @@ export class VoronoiPlateChunk {
     }
 
     getRegionForPosition(x, z) {
-        // Convert world coordinates to local cell coordinates
-        const localX = Math.floor((x - this.position.x * this.size) / 256);
-        const localZ = Math.floor((z - this.position.z * this.size) / 256);
+        const localX = Math.floor((x - this.position.x * this.size) / this.cellSize);
+        const localZ = Math.floor((z - this.position.z * this.size) / this.cellSize);
         return this.regions.get(`${localX},${localZ}`);
     }
 }
