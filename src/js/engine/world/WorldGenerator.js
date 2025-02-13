@@ -38,9 +38,9 @@ export class WorldGenerator {
             }
         };
 
-        this.terrainGenerator.generateTerrain(chunk);
         this.rockLayerGenerator.generateRockLayers(chunk);
         this.climateGenerator.generateClimate(chunk);
+        this.terrainGenerator.generateTerrain(chunk);
 
         return chunk;
     }

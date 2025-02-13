@@ -127,13 +127,13 @@ export class PlateManager {
         );
     
         // Calculate distance to second nearest point (F2)
-        const distF2 = Math.sqrt(
-            Math.pow(x - region.adjacentPoints[0].x, 2) + 
-            Math.pow(z - region.adjacentPoints[0].z, 2)
-        );
+        // const distF2 = Math.sqrt(
+        //     Math.pow(x - region.adjacentPoints[0].x, 2) + 
+        //     Math.pow(z - region.adjacentPoints[0].z, 2)
+        // );
     
         // Calculate F2-F1
-        const diff = (distF2 - distF1) / (this.plateSize * 0.15);
+        // const diff = (distF2 - distF1) / (this.plateSize * 0.15);
     
         const a = 4;
         const b = 0.3;

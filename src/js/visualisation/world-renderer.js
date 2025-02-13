@@ -21,7 +21,7 @@ export class WorldRenderer {
     setupCamera() {
         const aspect = this.container.clientWidth / this.container.clientHeight;
         this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 20000);
-        this.camera.position.set(500, 500, 500);
+        this.camera.position.set(0, 5000, 0);
         this.camera.lookAt(0, 0, 0);
     }
 

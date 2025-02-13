@@ -140,7 +140,7 @@ export class ChunkManager {
             currentChunkZ !== this.lastPlayerChunk.z ||
             currentHeightStep !== this.lastHeightStep) {
 
-            console.log('Current height:', playerPosition.y);
+            console.log('Position:', playerPosition);
             console.log('Current LOD levels:', this.lodLevels);
             console.log('Max Loaded Chunks: ', this.maxLoadedChunks)
             

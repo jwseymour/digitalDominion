@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heightmap Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #333;
+        }
+        canvas {
+            background: #000;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 5px;
+        }
+        input {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div>
+            <label for="seed">Seed:</label>
+            <input type="number" id="seed" value="3">
+        </div>
+        <div>
+            <label for="size">Size:</label>
+            <input type="number" id="size" value="131072" min="128" max="1310720" step="128">
+        </div>
+        <button id="generate">Generate</button>
+    </div>
+    <canvas id="heightmap"></canvas>
+    <div id="tooltip" style="display: none; position: absolute; background: rgba(0,0,0,0.8); color: white; padding: 5px; border-radius: 3px; pointer-events: none; white-space: pre-line;"></div>
+    <script src="js/demo/heightmap-viewer.js" type="module"></script>
+</body>
+</html>
