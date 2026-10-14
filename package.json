@@ -1,7 +1,7 @@
 {
     "name": "digital-dominion",
     "version": "1.0.0",
-    "description": "A civilization building simulation with AI-driven leadership capabilities",
+    "description": "Infinite procedurally generated 3D world with chunk streaming and LOD, built with Three.js and Vite",
     "type": "module",
     "scripts": {
       "dev": "vite",
@@ -12,10 +12,13 @@
       "simulation",
       "civilization",
       "ai",
+      "procedural-generation",
+      "threejs",
+      "vite",
       "3d",
       "game"
     ],
-    "author": "Your Name",
+    "author": "Jack Seymour",
     "license": "MIT",
     "dependencies": {
       "three": "^0.162.0"

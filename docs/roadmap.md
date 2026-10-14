@@ -1,4 +1,4 @@
-**plan**
+# Roadmap
 *1*. add a control that "zooms", it makes the chunks smaller and a lower LOD so that it is like the world has been made smaller but keeping all of it's proportions
 
 2. make the terrain generation more hospitibal to adding wildlive and civilisation models too
