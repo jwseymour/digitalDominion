@@ -1,20 +1,21 @@
 # Digital Dominion
 
-An in-browser, infinite, procedurally generated 3D world, built as the foundation for a civilisation-building game where you guide mortals as a disembodied god, with LLM-driven characters reacting to your choices.
+An infinite 3D world that generates in the browser as you fly around it. I started it in January 2025 as the base for a god game, where you guide mortals and LLM-driven characters react to what you do. Only the terrain exists so far.
 
-Built with **JavaScript (ES modules)**, **Three.js** and **Vite**. No pre-made assets or terrain libraries: the terrain, noise and chunk streaming are all written from scratch.
+It's JavaScript with Three.js and Vite. The terrain, noise and chunk loading are my own code, with no terrain libraries or pre-made assets.
 
-<!-- Add a screenshot: save it as docs/screenshot.png and uncomment the next line -->
-<!-- ![Digital Dominion terrain](docs/screenshot.png) -->
+![Green land with beaches and lakes, seen from the air](docs/screenshot.jpg)
 
-## Highlights
+*Seed 3.*
 
-- **Infinite, seeded terrain.** The same seed always produces the same world, generated on demand as you move.
-- **Chunk streaming with multi-level LOD.** Chunks near the camera render at high resolution and distant ones at progressively lower resolution, under a fixed memory budget (`ChunkManager`).
-- **Tectonic-plate-style terrain (in progress).** Large-scale structure comes from Worley/Voronoi noise over a plate grid (`PlateManager`, `PlateChunk`), layered with interpolated height maps.
-- **Climate and rock-layer generators** that feed terrain colouring now and will drive wildlife and resources later.
-- **Custom utilities.** Mersenne Twister PRNG, spiral coordinate indexing for deterministic per-cell hashing, and interpolation helpers.
-- **Free-flight camera** with boost and top-down view.
+## What's there
+
+- The same seed always gives the same world, and it's generated as you move.
+- Chunks near the camera are drawn at high resolution and far ones at lower resolution, with a cap on how many of each are kept (`ChunkManager`).
+- The large-scale shape comes from Worley noise over a grid of tectonic plates (`PlateManager`, `PlateChunk`), layered with height maps. This part is still in progress.
+- Climate and rock-layer generators, which only affect the colouring so far.
+- A Mersenne Twister random number generator and spiral indexing, so each cell gets the same random values every time.
+- A free-flight camera with a speed boost and a top-down view.
 
 ## Getting started
 
